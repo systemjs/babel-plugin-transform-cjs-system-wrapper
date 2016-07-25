@@ -13,13 +13,15 @@ var lodash = require('foo/');
 ```
 
 **Options**
-module.exports = {
-    "name": "foobar",
-    "deps": ['bar'],
-    "globals": {
-      f: foo
-    }
- }
+```js
+{
+  "name": "foobar",
+  "deps": ['bar'],
+  "globals": {
+    f: foo
+  }
+}
+```
 
 **Out**
 
@@ -28,7 +30,7 @@ System.registerDynamic('foobar', ['bar'], true, function ($__require, exports, m
   'use strict';
 
   var f = $__require('foo');
-  
+
   var define,
       global = this,
       GLOBAL = this;
@@ -60,9 +62,9 @@ $ npm install babel-plugin-transform-cjs-system-wrapper
       "name": "foobar", // optional
       "optimize": true, // optional
       "static": true, // optional
-      "deps": ['bar'], // optional
+      "deps": ["bar"], // optional
       "globals": {
-        f: foo
+        "f": "foo"
       } // optional
     }]
   ]
