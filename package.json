@@ -1,14 +1,17 @@
 {
-  "name": "babel-plugin-transform-cjs-to-systemjs",
+  "name": "babel-plugin-transform-cjs-system-wrapper",
   "version": "0.0.0",
-  "description": "Transforms CommonJS modules into SystemJS modules => System.registerDynamic('name', [], ...",
+  "description": "Transforms CommonJS scripts into named `System.registerDynamic('name', ...)`",
   "repository": {
     "type": "git",
-    "url": "http://github.com/jrauschenbusch/babel-plugin-transform-cjs-to-systemjs.git"
+    "url": "http://github.com/jrauschenbusch/babel-plugin-transform-cjs-system-wrapper.git"
   },
   "author": "Jochen Rauschenbusch",
   "license": "MIT",
   "main": "lib/index.js",
+  "dependencies": {
+    "babel-template": "^6.9.0"
+  },
   "devDependencies": {
     "babel-cli": "^6.4.5",
     "babel-core": "^6.10.4",
@@ -16,7 +19,8 @@
     "babel-register": "^6.9.0",
     "file-exists": "^1.0.0",
     "mocha": "^2.2.5",
-    "rimraf": "^2.5.3"
+    "rimraf": "^2.5.3",
+    "babel-plugin-transform-cjs-system-require": "^0.0.1"
   },
   "scripts": {
     "clean": "rimraf lib",

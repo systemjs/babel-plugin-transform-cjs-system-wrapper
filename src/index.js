@@ -1,15 +1,48 @@
-let parse = require('babylon').parse;
+import template from 'babel-template';
 
 export default function ({ types: t }) {
 
+  const requireIdentifier = t.identifier('$__require');
+
+  const buildTemplate = template(`
+    SYSTEM_GLOBAL.registerDynamic(MODULE_NAME, [DEPS], true, BODY);
+  `);
+
+  const buildFactory = template(`
+    (function ($__require, exports, module) {
+      GLOBALS
+      var define, global = this, GLOBAL = this;
+      STATIC_FILE_PATHS
+      REQUIRE_RESOLVE
+      DYNAMIC_FILE_PATHS
+      BODY
+      return module.exports;
+    })
+  `);
+
+  const buildStaticFilePaths = template(`
+    var __filename = FILENAME,
+        __dirname = DIRNAME;
+  `);
+
+  const buildDynamicFilePaths = template(`
+    var $__pathVars = SYSTEM_GLOBAL.get('@@cjs-helpers').getPathVars(module.id), __filename = $__pathVars.filename, __dirname = $__pathVars.dirname;
+  `);
+
+  const buildRequireResolve = template(`
+    $__require.resolve = function(request) {
+       return SYSTEM_GLOBAL.get('@@cjs-helpers').requireResolve(request, module.id);
+    }
+  `);
+
   return {
+    inherits: require('babel-plugin-transform-cjs-system-require'),
     visitor: {
-      CallExpression: function CallExpression(path, state) {
-        let opts = state.opts === undefined ? {} : state.opts;
+      CallExpression({ node }, { opts = {} }) {
+        let callee = node.callee,
+          state = arguments[1];
 
-        let callee = path.node.callee;
-
-        // test require.resolve
+        // test if require.resolve is present
         if (!opts.usesRequireResolve &&
           t.isMemberExpression(callee) &&
           t.isIdentifier(callee.object, { name: 'require' }) &&
@@ -17,111 +50,105 @@ export default function ({ types: t }) {
           state.set('usesRequireResolve', true);
         }
       },
-      MemberExpression: function Identifier(path, state) {
-        let opts = state.opts === undefined ? {} : state.opts;
+      MemberExpression({ node }, { opts = {} }) {
+
+        const path = arguments[0];
 
         // optimize process.env.NODE_ENV to 'production'
         if (opts.optimize &&
-          t.isIdentifier(path.node.object.object, { name: 'process' }) &&
-          t.isIdentifier(path.node.object.property, { name: 'env' }) &&
-          t.isIdentifier(path.node.property, { name: 'NODE_ENV' })) {
+          t.isIdentifier(node.object.object, { name: 'process' }) &&
+          t.isIdentifier(node.object.property, { name: 'env' }) &&
+          t.isIdentifier(node.property, { name: 'NODE_ENV' })) {
           path.replaceWith(t.stringLiteral('production'));
         }
 
       },
-      Identifier: function Identifier(path, state) {
-        let opts = state.opts === undefined ? {} : state.opts;
+      Identifier: function Identifier({ node }, state) {
 
         // test if file paths are used
-        if (t.isIdentifier(path.node, { name: '__filename' }) ||
-          t.isIdentifier(path.node, { name: '__dirname' })) {
+        if (t.isIdentifier(node, { name: '__filename' }) ||
+          t.isIdentifier(node, { name: '__dirname' })) {
           state.set('usesFilePaths', true);
         }
       },
       Program: {
-        exit: function (path, state) {
-          let opts = state.opts === undefined ? {} : state.opts;
+        exit({ node }, { opts = {} }) {
 
-          if (state.get('usesFilePaths') && opts.static) {
+          let { moduleName } = opts;
+          moduleName = moduleName ? t.stringLiteral(moduleName) : null;
 
-            let filenameIdentifier = t.Identifier('__filename');
-            let dirnameIdentifier = t.Identifier('__dirname');
+          let { deps = []} = opts;
+          deps = deps.map(d => t.stringLiteral(d));
 
-            let filename = t.stringLiteral(opts.path);
-            let dirname = t.stringLiteral(opts.path.split('/').slice(0, -1).join('/'));
+          const systemGlobal = t.identifier(opts.systemGlobal || 'System');
 
-            let filenameAssignment = t.assignmentPattern(filenameIdentifier, filename);
-            let dirnameAssignment = t.assignmentPattern(dirnameIdentifier, dirname);
-
-            let filenameInit = t.variableDeclarator(filenameAssignment);
-            let dirnameInit = t.variableDeclarator(dirnameAssignment);
-
-            let filePaths = t.variableDeclaration('var', [filenameInit, dirnameInit]);
-
-            path.node.body.unshift(filePaths);
+          let { globals } = opts;
+          if (globals && Object.keys(globals).length) {
+            let globalAssignments = Object.keys(globals).filter(g => globals[g]).map(g => {
+              let globalIdentifier = t.identifier(g);
+              let value = t.callExpression(requireIdentifier, [t.stringLiteral(globals[g])]);
+              let assignment = t.assignmentPattern(globalIdentifier, value);
+              return t.variableDeclarator(assignment);
+            });
+            globals = t.variableDeclaration('var', globalAssignments);
           }
 
-          if (state.get('usesRequireResolve') && !opts.static) {
-            // "$__require.resolve = function(request) { return SystemJS.get('@@cjs-helpers').requireResolve(request, module.id); };"
+          let staticFilePathStatements,
+            requireResolveOverwrite,
+            dynamicFilePathStatements;
 
-            let callGetCJSHelpers = t.callExpression(t.MemberExpression(t.identifier(opts.systemGlobal), t.identifier('get')), [t.stringLiteral('@@cjs-helpers')]),
-              callRequireResolve = t.callExpression(t.MemberExpression(callGetCJSHelpers, t.identifier('requireResolve')), [t.identifier('request'), t.identifier('module.id')]),
-              fn = t.functionExpression(null, [t.identifier('request')], t.blockStatement([t.returnStatement(callRequireResolve)])),
-              overrideRequireResolve = t.assignmentExpression('=', t.memberExpression(t.identifier('$__require'), t.identifier('resolve')), fn);
+          if (arguments[1].get('usesFilePaths') && opts.static) {
+            let filename = opts.path || '';
+            let dirname = filename.split('/').slice(0, -1).join('/');
 
-            // let script = `$__require.resolve = function(request) { return ${opts.systemGlobal}.get('@@cjs-helpers').requireResolve(request, module.id); };`;
-
-            path.node.body.unshift(t.expressionStatement(overrideRequireResolve));
+            staticFilePathStatements = buildStaticFilePaths({
+              FILENAME: t.stringLiteral(filename),
+              DIRNAME: t.stringLiteral(dirname)
+            });
           }
 
-          if (state.get('usesFilePaths') && !opts.static) {
-            let script = `var $__pathVars = ${opts.systemGlobal}.get('@@cjs-helpers').getPathVars(module.id), __filename = $__pathVars.filename, __dirname = $__pathVars.dirname;`;
-
-            path.node.body.unshift(parse(script).program.body[0]);
+          if (arguments[1].get('usesRequireResolve') && !opts.static) {
+            requireResolveOverwrite = buildRequireResolve({
+              SYSTEM_GLOBAL: systemGlobal
+            });
           }
 
-          let useStrict = true;
+          if (arguments[1].get('usesFilePaths') && !opts.static) {
+            dynamicFilePathStatements = buildDynamicFilePaths({
+              SYSTEM_GLOBAL: systemGlobal
+            });
+          }
 
-          // *** Prepend globals ***
-          let globalExpression = '';
-          if (opts.globals) {
-            globalExpression = 'var ';
-            let first = true;
-            for (var g in this.globals) {
-              globalExpression += (first ? '' : ', ') + g + `= $__require('${opts.globals[g]}')`;
-              first = false;
+          function hasRemoveUseStrict(list) {
+            for (var i = 0; i < list.length; i++) {
+              if (list[i].value.value === 'use strict') {
+                list.splice(i, 1);
+                return true;
+              }
             }
-            if (first == true) {
-              globalExpression = '';
-            }
-            globalExpression += ';';
+            return false;
           }
 
-          let nl = '\n    ';
-          let globals = `${(globalExpression ? globalExpression + nl : '')} var define, global = this, GLOBAL = this;`;
-          path.node.body.unshift(parse(globals).program.body[0]);
+          let useStrict = hasRemoveUseStrict(node.directives);
 
-          // *** wrap everything in System.register ***
-          let directives = useStrict ? [t.directive(t.directiveLiteral('use strict'))] : [];
+          const factory = buildFactory({
+            GLOBALS: globals || null,
+            STATIC_FILE_PATHS: staticFilePathStatements || null,
+            REQUIRE_RESOLVE: requireResolveOverwrite || null,
+            DYNAMIC_FILE_PATHS: dynamicFilePathStatements || null,
+            BODY: node.body
+          });
 
-          let modules = `${(this.name ? `'${opts.name}', ` : '') + JSON.stringify(opts.deps)}`;
-          
-          let registerCallback = t.functionExpression(null, [t.identifier('$__require'), t.identifier('exports'), t.identifier('module')], t.blockStatement([...path.node.body], directives));
-          
-          // Append `return module.exports` to System.registerDynamic callback fn
-          let modulesExportExpression = t.memberExpression(t.identifier('module'), t.identifier('exports'));
-          registerCallback.body.body.push(t.returnStatement(modulesExportExpression));
+          if (useStrict) {
+            factory.expression.body.directives.push(t.directive(t.directiveLiteral('use strict')));
+          }
 
-          // args for System.registerDynamic
-          let registerArgs = [t.stringLiteral(modules), t.booleanLiteral(true), registerCallback];
-
-          let registerCallee = t.memberExpression(t.identifier(opts.systemGlobal), t.identifier('registerDynamic'));
-          let registerCallExpression = t.callExpression(registerCallee, registerArgs);
-
-          // Empty body statements
-          path.node.body.length = 0;
-          // Refill body statements with wrapped System.register
-          path.node.body.push(t.expressionStatement(registerCallExpression));
+          node.body = [buildTemplate({
+            SYSTEM_GLOBAL: systemGlobal,
+            MODULE_NAME: moduleName,
+            DEPS: deps,
+            BODY: factory
+          })];
         },
       }
     }

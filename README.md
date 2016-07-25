@@ -1,22 +1,39 @@
-# babel-plugin-transform-system-register
+# babel-plugin-transform-cjs-system-wrapper
 
-Transforms CommonJS modules into SystemJS modules using `System.registerDynamic(...)`
+Wraps CommonJS scripts into `System.registerDynamic(...`
 
 ## Example
 
 **In**
 
 ```js
-let lodash = require('lodash/');
+'use strict';
+
+var lodash = require('foo/');
 ```
+
+**Options**
+module.exports = {
+    "name": "foobar",
+    "deps": ['bar'],
+    "globals": {
+      f: foo
+    }
+ }
 
 **Out**
 
 ```js
-System.registerDynamic('myModule', true, function ($__require, export, module) {
+System.registerDynamic('foobar', ['bar'], true, function ($__require, exports, module) {
   'use strict';
 
-  let lodash = $__require('lodash');
+  var f = $__require('foo');
+  
+  var define,
+      global = this,
+      GLOBAL = this;
+
+  var lodash = $__require('foo');
 
   return module.exports;
 });
@@ -25,7 +42,7 @@ System.registerDynamic('myModule', true, function ($__require, export, module) {
 ## Installation
 
 ```sh
-$ npm install babel-plugin-transform-cjs-to-systemjs
+$ npm install babel-plugin-transform-cjs-system-wrapper
 ```
 
 ## Usage
@@ -37,14 +54,16 @@ $ npm install babel-plugin-transform-cjs-to-systemjs
 ```json
 {
   "plugins": [
-    ["transform-cjs-to-systemjs", {
-      "systemGlobal": "SystemJS",
-      "path": "/path/to/file",
-      "name": "myModule",
-      "optimize": true,
-      "static": true,
-      "deps": {},
-      "globals": {}
+    ["transform-cjs-system-wrapper", {
+      "systemGlobal": "SystemJS", // optional
+      "path": "/path/to/foobar",
+      "name": "foobar", // optional
+      "optimize": true, // optional
+      "static": true, // optional
+      "deps": ['bar'], // optional
+      "globals": {
+        f: foo
+      } // optional
     }]
   ]
 }
@@ -53,7 +72,7 @@ $ npm install babel-plugin-transform-cjs-to-systemjs
 ### Via CLI
 
 ```sh
-$ babel --plugins transform-cjs-to-systemjs script.js
+$ babel --plugins transform-cjs-system-wrapper script.js
 ```
 
 ### Via Node API (Recommended)
@@ -61,14 +80,16 @@ $ babel --plugins transform-cjs-to-systemjs script.js
 ```javascript
 require("babel-core").transform("code", {
   plugins: [
-    ["transform-system-register", {
+    ["transform-cjs-system-wrapper", {
       systemGlobal: "SystemJS",
-      path: "/path/to/file",
-      name: "moduleName",
+      path: "/path/to/foobar",
+      name: "foobar",
       optimize: true,
       static: true,
-      deps: {},
-      globals: {}
+      deps: ['bar'],
+      globals: {
+        f: foo
+      }
     }]
   ]
 });
