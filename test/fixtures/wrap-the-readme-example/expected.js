@@ -6,7 +6,6 @@ System.registerDynamic('foobar', ['bar'], true, function ($__require, exports, m
       global = this,
       GLOBAL = this;
 
-
   var lodash = $__require('foo');
   return module.exports;
 });

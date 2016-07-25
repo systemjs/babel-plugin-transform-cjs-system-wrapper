@@ -21,8 +21,7 @@ export default function ({ types: t }) {
   `);
 
   const buildStaticFilePaths = template(`
-    var __filename = FILENAME,
-        __dirname = DIRNAME;
+    var __filename = FILENAME, __dirname = DIRNAME;
   `);
 
   const buildDynamicFilePaths = template(`
@@ -74,13 +73,18 @@ export default function ({ types: t }) {
       Program: {
         exit({ node }, { opts = {} }) {
 
+          const systemGlobal = t.identifier(opts.systemGlobal || 'System');
+
+          let state = arguments[1],
+            staticFilePathStatements,
+            requireResolveOverwrite,
+            dynamicFilePathStatements;
+
           let { moduleName } = opts;
           moduleName = moduleName ? t.stringLiteral(moduleName) : null;
 
-          let { deps = []} = opts;
+          let { deps = [] } = opts;
           deps = deps.map(d => t.stringLiteral(d));
-
-          const systemGlobal = t.identifier(opts.systemGlobal || 'System');
 
           let { globals } = opts;
           if (globals && Object.keys(globals).length) {
@@ -93,11 +97,7 @@ export default function ({ types: t }) {
             globals = t.variableDeclaration('var', globalAssignments);
           }
 
-          let staticFilePathStatements,
-            requireResolveOverwrite,
-            dynamicFilePathStatements;
-
-          if (arguments[1].get('usesFilePaths') && opts.static) {
+          if (state.get('usesFilePaths') && opts.static) {
             let filename = opts.path || '';
             let dirname = filename.split('/').slice(0, -1).join('/');
 
@@ -107,13 +107,13 @@ export default function ({ types: t }) {
             });
           }
 
-          if (arguments[1].get('usesRequireResolve') && !opts.static) {
+          if (state.get('usesRequireResolve') && !opts.static) {
             requireResolveOverwrite = buildRequireResolve({
               SYSTEM_GLOBAL: systemGlobal
             });
           }
 
-          if (arguments[1].get('usesFilePaths') && !opts.static) {
+          if (state.get('usesFilePaths') && !opts.static) {
             dynamicFilePathStatements = buildDynamicFilePaths({
               SYSTEM_GLOBAL: systemGlobal
             });
@@ -140,7 +140,9 @@ export default function ({ types: t }) {
           });
 
           if (useStrict) {
-            factory.expression.body.directives.push(t.directive(t.directiveLiteral('use strict')));
+            let useStrictDirective = t.directive(t.directiveLiteral('use strict'));
+            let { directives } = factory.expression.body;
+            directives.push(useStrictDirective);
           }
 
           node.body = [buildTemplate({
