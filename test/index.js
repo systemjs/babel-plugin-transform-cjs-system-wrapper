@@ -26,6 +26,8 @@ describe('Plugin', () => {
         options.plugins = [[plugin, require(optionsPath)]];
       }
 
+      options.moduleId = require(optionsPath).moduleName;
+
       if (fileExists(exceptionPath)) {
         const exception = fs.readFileSync(exceptionPath).toString();
 
@@ -35,7 +37,7 @@ describe('Plugin', () => {
       } else {
         const actual = transformFileSync(actualPath, options).code;
         const expected = fs.readFileSync(
-            path.join(fixtureDir, 'expected.js')
+          path.join(fixtureDir, 'expected.js')
         ).toString();
 
         assert.equal(trim(actual), trim(expected));

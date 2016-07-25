@@ -5,15 +5,13 @@ SystemJS.registerDynamic('foobar', ['bar'], true, function ($__require, exports,
   var define,
       global = this,
       GLOBAL = this;
-
-  $__require.resolve = function (request) {
-    return SystemJS.get('@@cjs-helpers').requireResolve(request, module.id);
-  };
-
   var $__pathVars = SystemJS.get('@@cjs-helpers').getPathVars(module.id),
       __filename = $__pathVars.filename,
       __dirname = $__pathVars.dirname;
 
+  $__require.resolve = function (request) {
+    return SystemJS.get('@@cjs-helpers').requireResolve(request, module.id);
+  };
 
   console.log(__filename);
 

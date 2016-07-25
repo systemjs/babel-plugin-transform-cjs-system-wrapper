@@ -10,14 +10,13 @@ export default function ({ types: t }) {
 
   const buildFactory = template(`
     (function ($__require, exports, module) {
-      GLOBALS
-      var define, global = this, GLOBAL = this;
-      STATIC_FILE_PATHS
-      REQUIRE_RESOLVE
-      DYNAMIC_FILE_PATHS
       BODY
       return module.exports;
     })
+  `);
+
+  const buildDefineGlobal = template(`
+     var define, global = this, GLOBAL = this;
   `);
 
   const buildStaticFilePaths = template(`
@@ -28,7 +27,7 @@ export default function ({ types: t }) {
     var $__pathVars = SYSTEM_GLOBAL.get('@@cjs-helpers').getPathVars(module.id), __filename = $__pathVars.filename, __dirname = $__pathVars.dirname;
   `);
 
-  const buildRequireResolve = template(`
+  const buildRequireResolveFacade = template(`
     $__require.resolve = function(request) {
        return SYSTEM_GLOBAL.get('@@cjs-helpers').requireResolve(request, module.id);
     }
@@ -36,22 +35,25 @@ export default function ({ types: t }) {
 
   return {
     inherits: require('babel-plugin-transform-cjs-system-require'),
+    pre() {
+      this.usesFilePaths = false;
+      this.usesRequireResolve = false;
+    },
     visitor: {
       CallExpression({ node }, { opts = {} }) {
-        let callee = node.callee,
-          state = arguments[1];
+        let callee = node.callee;
 
         // test if require.resolve is present
         if (!opts.usesRequireResolve &&
           t.isMemberExpression(callee) &&
           t.isIdentifier(callee.object, { name: 'require' }) &&
           t.isIdentifier(callee.property, { name: 'resolve' })) {
-          state.set('usesRequireResolve', true);
+          this.usesRequireResolve = true;
         }
       },
-      MemberExpression({ node }, { opts = {} }) {
+      MemberExpression(path, { opts = {} }) {
 
-        const path = arguments[0];
+        let { node } = path;
 
         // optimize process.env.NODE_ENV to 'production'
         if (opts.optimize &&
@@ -62,12 +64,12 @@ export default function ({ types: t }) {
         }
 
       },
-      Identifier: function Identifier({ node }, state) {
+      Identifier: function Identifier({ node }) {
 
         // test if file paths are used
         if (t.isIdentifier(node, { name: '__filename' }) ||
           t.isIdentifier(node, { name: '__dirname' })) {
-          state.set('usesFilePaths', true);
+          this.usesFilePaths = true;
         }
       },
       Program: {
@@ -75,16 +77,35 @@ export default function ({ types: t }) {
 
           const systemGlobal = t.identifier(opts.systemGlobal || 'System');
 
-          let state = arguments[1],
-            staticFilePathStatements,
-            requireResolveOverwrite,
-            dynamicFilePathStatements;
-
-          let { moduleName } = opts;
+          let moduleName = this.getModuleName();
           moduleName = moduleName ? t.stringLiteral(moduleName) : null;
 
-          let { deps = [] } = opts;
+          let { deps = []} = opts;
           deps = deps.map(d => t.stringLiteral(d));
+
+          if (this.usesRequireResolve && !opts.static) {
+            node.body.unshift(buildRequireResolveFacade({
+              SYSTEM_GLOBAL: systemGlobal
+            }));
+          }
+
+          if (this.usesFilePaths && !opts.static) {
+            node.body.unshift(buildDynamicFilePaths({
+              SYSTEM_GLOBAL: systemGlobal
+            }));
+          }
+
+          if (this.usesFilePaths && opts.static) {
+            let filename = opts.path || '';
+            let dirname = filename.split('/').slice(0, -1).join('/');
+
+            node.body.unshift(buildStaticFilePaths({
+              FILENAME: t.stringLiteral(filename),
+              DIRNAME: t.stringLiteral(dirname)
+            }));
+          }
+
+          node.body.unshift(buildDefineGlobal());
 
           let { globals } = opts;
           if (globals && Object.keys(globals).length) {
@@ -95,55 +116,15 @@ export default function ({ types: t }) {
               return t.variableDeclarator(assignment);
             });
             globals = t.variableDeclaration('var', globalAssignments);
+            node.body.unshift(globals);
           }
-
-          if (state.get('usesFilePaths') && opts.static) {
-            let filename = opts.path || '';
-            let dirname = filename.split('/').slice(0, -1).join('/');
-
-            staticFilePathStatements = buildStaticFilePaths({
-              FILENAME: t.stringLiteral(filename),
-              DIRNAME: t.stringLiteral(dirname)
-            });
-          }
-
-          if (state.get('usesRequireResolve') && !opts.static) {
-            requireResolveOverwrite = buildRequireResolve({
-              SYSTEM_GLOBAL: systemGlobal
-            });
-          }
-
-          if (state.get('usesFilePaths') && !opts.static) {
-            dynamicFilePathStatements = buildDynamicFilePaths({
-              SYSTEM_GLOBAL: systemGlobal
-            });
-          }
-
-          function hasRemoveUseStrict(list) {
-            for (var i = 0; i < list.length; i++) {
-              if (list[i].value.value === 'use strict') {
-                list.splice(i, 1);
-                return true;
-              }
-            }
-            return false;
-          }
-
-          let useStrict = hasRemoveUseStrict(node.directives);
 
           const factory = buildFactory({
-            GLOBALS: globals || null,
-            STATIC_FILE_PATHS: staticFilePathStatements || null,
-            REQUIRE_RESOLVE: requireResolveOverwrite || null,
-            DYNAMIC_FILE_PATHS: dynamicFilePathStatements || null,
             BODY: node.body
           });
 
-          if (useStrict) {
-            let useStrictDirective = t.directive(t.directiveLiteral('use strict'));
-            let { directives } = factory.expression.body;
-            directives.push(useStrictDirective);
-          }
+          factory.expression.body.directives = node.directives;
+          node.directives = [];
 
           node.body = [buildTemplate({
             SYSTEM_GLOBAL: systemGlobal,
