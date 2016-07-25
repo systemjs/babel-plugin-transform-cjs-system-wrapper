@@ -12,14 +12,19 @@ Wraps CommonJS scripts into `System.registerDynamic(...`
 var lodash = require('foo/');
 ```
 
-**Options**
+**Babel Options**
 ```js
 {
-  "name": "foobar",
-  "deps": ['bar'],
-  "globals": {
-    f: foo
-  }
+  moduleId: 'foobar'
+  plugins: [
+    ['transform-cjs-system-wrapper', {
+    name: 'foobar',
+    deps: ['bar'],
+    globals: {
+      f: foo
+    }
+  }]
+  ]
 }
 ```
 
@@ -30,13 +35,10 @@ System.registerDynamic('foobar', ['bar'], true, function ($__require, exports, m
   'use strict';
 
   var f = $__require('foo');
-
   var define,
       global = this,
       GLOBAL = this;
-
   var lodash = $__require('foo');
-
   return module.exports;
 });
 ```
@@ -55,11 +57,11 @@ $ npm install babel-plugin-transform-cjs-system-wrapper
 
 ```json
 {
+  "moduleId": "foobar", // optional
   "plugins": [
     ["transform-cjs-system-wrapper", {
       "systemGlobal": "SystemJS", // optional
       "path": "/path/to/foobar",
-      "name": "foobar", // optional
       "optimize": true, // optional
       "static": true, // optional
       "deps": ["bar"], // optional
@@ -81,11 +83,11 @@ $ babel --plugins transform-cjs-system-wrapper script.js
 
 ```javascript
 require("babel-core").transform("code", {
+  moduleId: 'foobar',
   plugins: [
     ["transform-cjs-system-wrapper", {
       systemGlobal: "SystemJS",
       path: "/path/to/foobar",
-      name: "foobar",
       optimize: true,
       static: true,
       deps: ['bar'],
