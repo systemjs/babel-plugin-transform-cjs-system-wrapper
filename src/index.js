@@ -50,6 +50,17 @@ export default function ({ types: t }) {
           t.isIdentifier(callee.property, { name: 'resolve' })) {
           this.usesRequireResolve = true;
         }
+
+        if (opts.systemGlobal != 'System' &&
+          t.isMemberExpression(callee) &&
+          t.isIdentifier(callee.property, { name: '_nodeRequire' })) {
+
+          let calleeObjectIdentifier = callee.object.name.replace(/(^|[^_])System/g, function (match, startArg) {
+            return startArg + opts.systemGlobal;
+          });
+
+          callee.object = t.identifier(calleeObjectIdentifier);
+        }
       },
       MemberExpression(path, { opts = {} }) {
 
