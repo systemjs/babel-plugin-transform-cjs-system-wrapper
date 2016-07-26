@@ -44,7 +44,7 @@ export default function ({ types: t }) {
         let callee = node.callee;
 
         // test if require.resolve is present
-        if (!opts.usesRequireResolve &&
+        if (!this.usesRequireResolve &&
           t.isMemberExpression(callee) &&
           t.isIdentifier(callee.object, { name: 'require' }) &&
           t.isIdentifier(callee.property, { name: 'resolve' })) {
