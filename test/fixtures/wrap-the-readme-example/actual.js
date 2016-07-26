@@ -1,3 +1,3 @@
 'use strict';
 
-var lodash = require('foo/');
+var foo = require('foo/');

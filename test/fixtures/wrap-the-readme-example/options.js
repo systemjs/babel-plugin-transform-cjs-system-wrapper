@@ -3,6 +3,5 @@ module.exports = {
 	globals: {
 		f: 'foo'
 	},
-	deps: ['bar'],
-	minified: true
+	deps: ['bar']
 };
