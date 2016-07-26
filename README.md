@@ -18,12 +18,11 @@ var foo = require('foo/');
   moduleId: 'foobar'
   plugins: [
     ['transform-cjs-system-wrapper', {
-    name: 'foobar',
-    deps: ['bar'],
-    globals: {
-      f: foo
-    }
-  }]
+      deps: ['bar'],
+      globals: {
+        f: foo
+      }
+    }]
   ]
 }
 ```
@@ -83,15 +82,15 @@ $ babel --plugins transform-cjs-system-wrapper script.js
 
 ```javascript
 require("babel-core").transform("code", {
-  moduleId: 'foobar', // optional
+  moduleId: 'foobar', // optional (default: '')
   plugins: [
     ["transform-cjs-system-wrapper", {
-      systemGlobal: "SystemJS", // optional
-      path: "/path/to/foobar", // optional
-      optimize: true, // optional
-      static: true, // optional
-      deps: ['bar'], // optional
-      globals: {  // optional
+      systemGlobal: "SystemJS", // optional (default: 'SystemJS')
+      path: "/path/to/foobar", // optional (default: '')
+      optimize: true, // optional (default: false)
+      static: true, // optional (default: false)
+      deps: ['bar'], // optional (default: [])
+      globals: {  // optional (default: {})
         f: foo
       }
     }]

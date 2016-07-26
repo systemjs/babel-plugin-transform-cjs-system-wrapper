@@ -55,6 +55,8 @@ export default function ({ types: t }) {
 
         let { node } = path;
 
+        opts.optimize = (opts.optimize === true) || false;
+
         // optimize process.env.NODE_ENV to 'production'
         if (opts.optimize &&
           t.isIdentifier(node.object.object, { name: 'process' }) &&
@@ -74,6 +76,8 @@ export default function ({ types: t }) {
       },
       Program: {
         exit({ node }, { opts = {} }) {
+
+          opts.static = (opts.static === true) || false;
 
           const systemGlobal = t.identifier(opts.systemGlobal || 'System');
 
