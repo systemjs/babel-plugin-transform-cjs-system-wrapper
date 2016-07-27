@@ -53,13 +53,10 @@ export default function ({ types: t }) {
 
         if (opts.systemGlobal != 'System' &&
           t.isMemberExpression(callee) &&
+          t.isIdentifier(callee.object, { name: 'System' }) &&
           t.isIdentifier(callee.property, { name: '_nodeRequire' })) {
 
-          let calleeObjectIdentifier = callee.object.name.replace(/(^|[^_])System/g, function (match, startArg) {
-            return startArg + opts.systemGlobal;
-          });
-
-          callee.object = t.identifier(calleeObjectIdentifier);
+          callee.object = t.identifier(opts.systemGlobal);
         }
       },
       MemberExpression(path, { opts = {} }) {
