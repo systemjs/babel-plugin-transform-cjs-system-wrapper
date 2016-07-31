@@ -10,7 +10,8 @@
   "license": "MIT",
   "main": "lib/index.js",
   "dependencies": {
-    "babel-template": "^6.9.0"
+    "babel-template": "^6.9.0",
+    "babel-plugin-transform-cjs-system-require": "^0.0.1"
   },
   "devDependencies": {
     "babel-cli": "^6.4.5",
@@ -19,8 +20,7 @@
     "babel-register": "^6.9.0",
     "file-exists": "^1.0.0",
     "mocha": "^2.2.5",
-    "rimraf": "^2.5.3",
-    "babel-plugin-transform-cjs-system-require": "^0.0.1"
+    "rimraf": "^2.5.3"
   },
   "scripts": {
     "clean": "rimraf lib",
