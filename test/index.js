@@ -23,10 +23,10 @@ describe('Plugin', () => {
       };
 
       if (fileExists(optionsPath)) {
-        options.plugins = [[plugin, require(optionsPath)]];
+        const opts = require(optionsPath);
+        options.plugins = [[plugin, opts]];
+        options.moduleId = opts.moduleName;
       }
-
-      options.moduleId = require(optionsPath).moduleName;
 
       if (fileExists(exceptionPath)) {
         const exception = fs.readFileSync(exceptionPath).toString();
