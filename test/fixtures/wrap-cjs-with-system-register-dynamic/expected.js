@@ -17,7 +17,7 @@ SystemJS.registerDynamic('foobar', ['bar'], true, function ($__require, exports,
 
   (function ($__require) {
 
-    if (typeof $__require != 'undefined' && eval('typeof $__require') == 'undefined') {
+    if (typeof $__require != 'undefined' && eval('typeof require') == 'undefined') {
       exports.cjs = true;
     }
 
