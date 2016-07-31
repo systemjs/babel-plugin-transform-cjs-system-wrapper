@@ -60,10 +60,7 @@ export default function ({ types: t }) {
         }
       },
       MemberExpression(path, { opts = {} }) {
-
         let { node } = path;
-
-        opts.optimize = (opts.optimize === true) || false;
 
         // optimize process.env.NODE_ENV to 'production'
         if (opts.optimize &&
@@ -72,10 +69,8 @@ export default function ({ types: t }) {
           t.isIdentifier(node.property, { name: 'NODE_ENV' })) {
           path.replaceWith(t.stringLiteral('production'));
         }
-
       },
       Identifier: function Identifier({ node }) {
-
         // test if file paths are used
         if (t.isIdentifier(node, { name: '__filename' }) ||
           t.isIdentifier(node, { name: '__dirname' })) {
@@ -84,7 +79,6 @@ export default function ({ types: t }) {
       },
       Program: {
         exit({ node }, { opts = {} }) {
-
           opts.static = (opts.static === true) || false;
 
           const systemGlobal = t.identifier(opts.systemGlobal || 'System');
@@ -92,7 +86,7 @@ export default function ({ types: t }) {
           let moduleName = this.getModuleName();
           moduleName = moduleName ? t.stringLiteral(moduleName) : null;
 
-          let { deps = []} = opts;
+          let { deps = [] } = opts;
           deps = deps.map(d => t.stringLiteral(d));
 
           if (this.usesRequireResolve && !opts.static) {
