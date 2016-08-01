@@ -3,7 +3,7 @@ System.registerDynamic([], true, function ($__require, exports, module) {
   'foobar';
 
   var define,
-      global = this,
-      GLOBAL = this;
+      global = this || self,
+      GLOBAL = global;
   return module.exports;
 });

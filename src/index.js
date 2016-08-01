@@ -16,7 +16,7 @@ export default function ({ types: t }) {
   `);
 
   const buildDefineGlobal = template(`
-     var define, global = this, GLOBAL = this;
+     var define, global = this || self, GLOBAL = global;
   `);
 
   const buildStaticFilePaths = template(`
@@ -70,7 +70,7 @@ export default function ({ types: t }) {
           path.replaceWith(t.stringLiteral('production'));
         }
       },
-      Identifier: function Identifier({ node }) {
+      Identifier({ node }) {
         // test if file paths are used
         if (t.isIdentifier(node, { name: '__filename' }) ||
           t.isIdentifier(node, { name: '__dirname' })) {
