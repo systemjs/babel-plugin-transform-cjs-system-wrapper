@@ -23,11 +23,10 @@
     "rimraf": "^2.5.3"
   },
   "scripts": {
-    "clean": "rimraf lib",
     "build": "babel src -d lib",
     "test": "mocha --compilers js:babel-register",
     "test:watch": "npm run test -- --watch",
-    "prepublish": "npm run clean && npm run build"
+    "prepublish": "npm run build"
   },
   "keywords": [
     "babel",
