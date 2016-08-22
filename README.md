@@ -85,11 +85,15 @@ require("babel-core").transform("code", {
   moduleId: 'foobar', // optional (default: '')
   plugins: [
     ["transform-cjs-system-wrapper", {
+      requireName: 'require' // (default: 'require')
       systemGlobal: "SystemJS", // optional (default: 'SystemJS')
       path: "/path/to/foobar", // optional (default: '')
       optimize: true, // optional (default: false)
       static: true, // optional (default: false)
-      deps: ['bar'], // optional (default: [])
+      deps: ['bar'], // optional (default: []),
+      map: function(dep) {
+        return mappedDep
+      }, // (default: identity)
       globals: {  // optional (default: {})
         f: foo
       }
