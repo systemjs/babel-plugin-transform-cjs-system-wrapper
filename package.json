@@ -1,6 +1,6 @@
 {
   "name": "babel-plugin-transform-cjs-system-wrapper",
-  "version": "0.0.3",
+  "version": "0.1.0",
   "description": "Wraps CommonJS scripts into System.registerDynamic(...",
   "repository": {
     "type": "git",
