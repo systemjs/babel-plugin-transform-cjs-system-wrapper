@@ -51,13 +51,6 @@ export default function ({ types: t }) {
           this.usesRequireResolve = true;
         }
 
-        if (opts.systemGlobal != 'System' &&
-          t.isMemberExpression(callee) &&
-          t.isIdentifier(callee.object, { name: 'System' }) &&
-          t.isIdentifier(callee.property, { name: '_nodeRequire' })) {
-
-          callee.object = t.identifier(opts.systemGlobal);
-        }
       },
       MemberExpression(path, { opts = {} }) {
         let { node } = path;
@@ -68,6 +61,12 @@ export default function ({ types: t }) {
           t.isIdentifier(node.object.property, { name: 'env' }) &&
           t.isIdentifier(node.property, { name: 'NODE_ENV' })) {
           path.replaceWith(t.stringLiteral('production'));
+        }
+
+        if (opts.systemGlobal != 'System' &&
+          t.isIdentifier(node.object, { name: 'System' }) &&
+          t.isIdentifier(node.property, { name: '_nodeRequire' })) {
+          node.object = t.identifier(opts.systemGlobal);
         }
       },
       Identifier({ node }) {
@@ -86,7 +85,7 @@ export default function ({ types: t }) {
           let moduleName = this.getModuleName();
           moduleName = moduleName ? t.stringLiteral(moduleName) : null;
 
-          let { deps = [] } = opts;
+          let { deps = []} = opts;
           deps = deps.map(d => t.stringLiteral(d));
 
           if (this.usesRequireResolve && !opts.static) {
