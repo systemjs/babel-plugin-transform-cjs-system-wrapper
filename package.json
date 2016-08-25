@@ -10,8 +10,7 @@
   "license": "MIT",
   "main": "lib/index.js",
   "dependencies": {
-    "babel-template": "^6.9.0",
-    "babel-plugin-transform-cjs-system-require": "^0.1.1"
+    "babel-template": "^6.9.0"
   },
   "devDependencies": {
     "babel-cli": "^6.4.5",
