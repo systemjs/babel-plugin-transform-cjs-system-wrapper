@@ -1,6 +1,6 @@
 {
   "name": "babel-plugin-transform-cjs-system-wrapper",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Wraps CommonJS scripts into System.registerDynamic(...",
   "repository": {
     "type": "git",
@@ -11,7 +11,7 @@
   "main": "lib/index.js",
   "dependencies": {
     "babel-template": "^6.9.0",
-    "babel-plugin-transform-cjs-system-require": "0.0.2"
+    "babel-plugin-transform-cjs-system-require": "^0.1.1"
   },
   "devDependencies": {
     "babel-cli": "^6.4.5",
