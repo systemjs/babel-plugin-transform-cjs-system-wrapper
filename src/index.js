@@ -96,8 +96,16 @@ export default function ({ types: t }) {
           node.object = t.identifier(opts.systemGlobal);
         }
       },
+      ReferencedIdentifier(path, state) {
+        if (path.node.name == 'define' &&
+          !path.scope.hasBinding('define') &&
+          (!t.isExpression(path.parentPath) ||
+            (t.isUnaryExpression(path.parentPath) && path.parentPath.node.operator === 'typeof'))) {
+          path.replaceWith(t.identifier('undefined'));
+        }
+      },
       Identifier(path) {
-		let { node } = path;
+        let { node } = path;
         // test if file paths are used
         if (t.isIdentifier(node, { name: '__filename' }) ||
           t.isIdentifier(node, { name: '__dirname' })) {
