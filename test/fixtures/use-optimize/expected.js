@@ -3,5 +3,4 @@ System.registerDynamic([], true, function ($__require, exports, module) {
       global = this || self,
       GLOBAL = global;
   "production";
-  return module.exports;
 });

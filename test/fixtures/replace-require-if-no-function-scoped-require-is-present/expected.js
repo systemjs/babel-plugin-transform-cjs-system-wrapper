@@ -16,5 +16,4 @@ System.registerDynamic([], true, function ($__require, exports, module) {
       $__require('some' + 'expression');
     }
   })();
-  return module.exports;
 });

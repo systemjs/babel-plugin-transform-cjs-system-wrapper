@@ -33,5 +33,4 @@ SystemJS.registerDynamic('foobar', ['bar'], true, function ($__require, exports,
   })($__require);
 
   exports.env = 'production';
-  return module.exports;
 });

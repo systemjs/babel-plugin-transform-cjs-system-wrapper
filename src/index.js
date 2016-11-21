@@ -11,7 +11,6 @@ export default function ({ types: t }) {
   const buildFactory = template(`
     (function (require, exports, module) {
       BODY
-      MODULE_EXPORT
     })
   `);
 
@@ -37,7 +36,6 @@ export default function ({ types: t }) {
     pre() {
       this.usesFilePaths = false;
       this.usesRequireResolve = false;
-      this.moduleRedeclaredInOuterScope = false;
     },
     visitor: {
       CallExpression(path, { opts = {} }) {
@@ -111,11 +109,6 @@ export default function ({ types: t }) {
           t.isIdentifier(node, { name: '__dirname' })) {
           this.usesFilePaths = true;
         }
-
-        if (t.isIdentifier(node, { name: 'module' }) &&
-         t.isVariableDeclarator(path.parent)) {
-          this.moduleRedeclaredInOuterScope = true;
-        }
       },
       Program: {
         exit(path, { opts = {} }) {
@@ -170,11 +163,8 @@ export default function ({ types: t }) {
             path.node.body.unshift(globals);
           }
 
-          let moduleExportReturnStatement = this.moduleRedeclaredInOuterScope ? null : t.returnStatement(t.memberExpression(t.identifier('module'), t.identifier('exports')));
-
           const factory = buildFactory({
-            BODY: path.node.body,
-            MODULE_EXPORT: moduleExportReturnStatement
+            BODY: path.node.body
           });
 
           factory.expression.body.directives = path.node.directives;

@@ -11,5 +11,4 @@ System.registerDynamic([], true, function ($__require, exports, module) {
       });
     }
   }
-  return module.exports;
 });

@@ -6,5 +6,4 @@ System.registerDynamic('foobar', ['bar'], true, function ($__require, exports, m
       global = this || self,
       GLOBAL = global;
   var foo = $__require('foo');
-  return module.exports;
 });

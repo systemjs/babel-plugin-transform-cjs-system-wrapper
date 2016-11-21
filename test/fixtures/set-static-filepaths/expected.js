@@ -5,5 +5,4 @@ System.registerDynamic([], true, function ($__require, exports, module) {
   var __filename = "",
       __dirname = "";
   console.log(__filename);
-  return module.exports;
 });

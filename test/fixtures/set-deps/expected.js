@@ -2,5 +2,4 @@ System.registerDynamic(["foo", "bar"], true, function ($__require, exports, modu
   var define,
       global = this || self,
       GLOBAL = global;
-  return module.exports;
 });

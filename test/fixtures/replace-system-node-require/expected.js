@@ -4,5 +4,4 @@ SystemJS.registerDynamic([], true, function ($__require, exports, module) {
       GLOBAL = global;
   SystemJS._nodeRequire("foo");
   SystemJS._nodeRequire("bar");
-  return module.exports;
 });

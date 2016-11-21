@@ -6,5 +6,4 @@ System.registerDynamic([], true, function ($__require, exports, module) {
       __filename = $__pathVars.filename,
       __dirname = $__pathVars.dirname;
   console.log(__filename);
-  return module.exports;
 });

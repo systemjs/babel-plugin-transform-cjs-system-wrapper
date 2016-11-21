@@ -3,5 +3,4 @@ $__System.registerDynamic([], true, function ($__require, exports, module) {
       global = this || self,
       GLOBAL = global;
   module.exports = $__System._nodeRequire ? process : $__require('foo');
-  return module.exports;
 });
