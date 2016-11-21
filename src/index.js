@@ -15,7 +15,7 @@ export default function ({ types: t }) {
   `);
 
   const buildDefineGlobal = template(`
-     var define, global = this || self, GLOBAL = global;
+     var global = this || self, GLOBAL = global;
   `);
 
   const buildStaticFilePaths = template(`

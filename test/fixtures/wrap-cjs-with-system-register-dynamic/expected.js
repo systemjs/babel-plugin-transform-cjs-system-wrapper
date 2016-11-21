@@ -2,8 +2,7 @@ SystemJS.registerDynamic('foobar', ['bar'], true, function ($__require, exports,
   'use strict';
 
   var f = $__require('foo');
-  var define,
-      global = this || self,
+  var global = this || self,
       GLOBAL = global;
   var $__pathVars = SystemJS.get('@@cjs-helpers').getPathVars(module.id),
       __filename = $__pathVars.filename,
