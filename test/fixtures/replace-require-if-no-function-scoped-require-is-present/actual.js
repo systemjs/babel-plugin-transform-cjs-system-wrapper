@@ -1,8 +1,6 @@
 'use strict';
 
-console.log(__filename);
-
-(function (require) {
+(function () {
 
   if (typeof require != 'undefined' && eval('typeof require') != 'undefined') {
     exports.cjs = true;
@@ -13,10 +11,4 @@ console.log(__filename);
     require('bar/');
     require('some' + 'expression');
   }
-})(require);
-
-(function (require) {
-  require.resolve('raboof');
-})(require);
-
-exports.env = process.env.NODE_ENV;
+})();

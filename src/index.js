@@ -2,21 +2,20 @@ import template from 'babel-template';
 
 export default function ({ types: t }) {
 
-  const requireIdentifier = t.identifier('$__require');
+  const requireIdentifier = t.identifier('require');
 
   const buildTemplate = template(`
     SYSTEM_GLOBAL.registerDynamic(MODULE_NAME, [DEPS], true, BODY);
   `);
 
   const buildFactory = template(`
-    (function ($__require, exports, module) {
+    (function (require, exports, module) {
       BODY
-      return module.exports;
     })
   `);
 
   const buildDefineGlobal = template(`
-     var define, global = this || self, GLOBAL = global;
+     var global = this || self, GLOBAL = global;
   `);
 
   const buildStaticFilePaths = template(`
@@ -28,29 +27,55 @@ export default function ({ types: t }) {
   `);
 
   const buildRequireResolveFacade = template(`
-    $__require.resolve = function(request) {
+    require.resolve = function(request) {
        return SYSTEM_GLOBAL.get('@@cjs-helpers').requireResolve(request, module.id);
     }
   `);
 
   return {
-    inherits: require('babel-plugin-transform-cjs-system-require'),
     pre() {
       this.usesFilePaths = false;
       this.usesRequireResolve = false;
     },
     visitor: {
-      CallExpression({ node }, { opts = {} }) {
-        let callee = node.callee;
+      CallExpression(path, { opts = {} }) {
+        const callee = path.node.callee;
+        const args = path.node.arguments;
+
+        const {
+          requireName = 'require',
+          map
+        } = opts;
 
         // test if require.resolve is present
         if (!this.usesRequireResolve &&
           t.isMemberExpression(callee) &&
-          t.isIdentifier(callee.object, { name: opts.requireName || 'require' }) &&
+          t.isIdentifier(callee.object, { name: requireName }) &&
           t.isIdentifier(callee.property, { name: 'resolve' })) {
           this.usesRequireResolve = true;
         }
 
+        // found a require
+        if (t.isIdentifier(callee, { name: requireName }) &&
+          args.length == 1) {
+
+          // require('x');
+          if (t.isStringLiteral(args[0])) {
+
+            let requiredModuleName = args[0].value;
+
+            // mirror behaviour at https://github.com/systemjs/systemjs/blob/0.19.8/lib/cjs.js#L50 to remove trailing slash
+            if (requiredModuleName[requiredModuleName.length - 1] == '/') {
+              requiredModuleName = requiredModuleName.substr(0, requiredModuleName.length - 1);
+            }
+
+            if (typeof map === 'function') {
+              requiredModuleName = map(requiredModuleName) || requiredModuleName;
+            }
+
+            args[0].value = requiredModuleName;
+          }
+        }
       },
       MemberExpression(path, { opts = {} }) {
         let { node } = path;
@@ -69,7 +94,16 @@ export default function ({ types: t }) {
           node.object = t.identifier(opts.systemGlobal);
         }
       },
-      Identifier({ node }) {
+      ReferencedIdentifier(path, state) {
+        if (path.node.name == 'define' &&
+          !path.scope.hasBinding('define') &&
+          (!t.isExpression(path.parentPath) ||
+            (t.isUnaryExpression(path.parentPath) && path.parentPath.node.operator === 'typeof'))) {
+          path.replaceWith(t.identifier('undefined'));
+        }
+      },
+      Identifier(path) {
+        let { node } = path;
         // test if file paths are used
         if (t.isIdentifier(node, { name: '__filename' }) ||
           t.isIdentifier(node, { name: '__dirname' })) {
@@ -77,7 +111,12 @@ export default function ({ types: t }) {
         }
       },
       Program: {
-        exit({ node }, { opts = {} }) {
+        exit(path, { opts = {} }) {
+          const {
+            requireName = 'require',
+            mappedRequireName = '$__require',
+          } = opts;
+
           opts.static = (opts.static === true) || false;
 
           const systemGlobal = t.identifier(opts.systemGlobal || 'System');
@@ -89,13 +128,13 @@ export default function ({ types: t }) {
           deps = deps.map(d => t.stringLiteral(d));
 
           if (this.usesRequireResolve && !opts.static) {
-            node.body.unshift(buildRequireResolveFacade({
+            path.node.body.unshift(buildRequireResolveFacade({
               SYSTEM_GLOBAL: systemGlobal
             }));
           }
 
           if (this.usesFilePaths && !opts.static) {
-            node.body.unshift(buildDynamicFilePaths({
+            path.node.body.unshift(buildDynamicFilePaths({
               SYSTEM_GLOBAL: systemGlobal
             }));
           }
@@ -104,13 +143,13 @@ export default function ({ types: t }) {
             let filename = opts.path || '';
             let dirname = filename.split('/').slice(0, -1).join('/');
 
-            node.body.unshift(buildStaticFilePaths({
+            path.node.body.unshift(buildStaticFilePaths({
               FILENAME: t.stringLiteral(filename),
               DIRNAME: t.stringLiteral(dirname)
             }));
           }
 
-          node.body.unshift(buildDefineGlobal());
+          path.node.body.unshift(buildDefineGlobal());
 
           let { globals } = opts;
           if (globals && Object.keys(globals).length) {
@@ -121,22 +160,35 @@ export default function ({ types: t }) {
               return t.variableDeclarator(assignment);
             });
             globals = t.variableDeclaration('var', globalAssignments);
-            node.body.unshift(globals);
+            path.node.body.unshift(globals);
           }
 
           const factory = buildFactory({
-            BODY: node.body
+            BODY: path.node.body
           });
 
-          factory.expression.body.directives = node.directives;
-          node.directives = [];
+          factory.expression.body.directives = path.node.directives;
+          path.node.directives = [];
 
-          node.body = [buildTemplate({
+          path.node.body = [buildTemplate({
             SYSTEM_GLOBAL: systemGlobal,
             MODULE_NAME: moduleName,
             DEPS: deps,
             BODY: factory
           })];
+
+          const remapFactoryScopedRequire = {
+            FunctionExpression(path) {
+              if (path.node == factory.expression) {
+                path.scope.rename(this.requireName, this.mappedRequireName);
+              }
+            }
+          };
+
+          path.traverse(remapFactoryScopedRequire, {
+            requireName: requireName,
+            mappedRequireName: mappedRequireName
+          });
         },
       }
     }

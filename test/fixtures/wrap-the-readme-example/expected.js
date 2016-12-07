@@ -2,9 +2,7 @@ System.registerDynamic('foobar', ['bar'], true, function ($__require, exports, m
   'use strict';
 
   var f = $__require('foo');
-  var define,
-      global = this || self,
+  var global = this || self,
       GLOBAL = global;
   var foo = $__require('foo');
-  return module.exports;
 });

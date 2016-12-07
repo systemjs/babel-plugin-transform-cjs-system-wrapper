@@ -2,8 +2,7 @@ SystemJS.registerDynamic('foobar', ['bar'], true, function ($__require, exports,
   'use strict';
 
   var f = $__require('foo');
-  var define,
-      global = this || self,
+  var global = this || self,
       GLOBAL = global;
   var $__pathVars = SystemJS.get('@@cjs-helpers').getPathVars(module.id),
       __filename = $__pathVars.filename,
@@ -15,23 +14,22 @@ SystemJS.registerDynamic('foobar', ['bar'], true, function ($__require, exports,
 
   console.log(__filename);
 
-  (function ($__require) {
+  (function (require) {
 
-    if (typeof $__require != 'undefined' && eval('typeof require') == 'undefined') {
+    if (typeof require != 'undefined' && eval('typeof require') != 'undefined') {
       exports.cjs = true;
     }
 
     if (false) {
-      $__require('foo');
-      $__require('bar');
-      $__require('some' + 'expression');
+      require('foo');
+      require('bar');
+      require('some' + 'expression');
     }
   })($__require);
 
-  (function ($__require) {
-    $__require.resolve('raboof');
+  (function (require) {
+    require.resolve('raboof');
   })($__require);
 
   exports.env = 'production';
-  return module.exports;
 });

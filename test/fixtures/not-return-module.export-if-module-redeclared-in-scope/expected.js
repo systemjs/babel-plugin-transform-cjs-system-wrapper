@@ -1,5 +1,7 @@
 System.registerDynamic([], true, function ($__require, exports, module) {
-  var f = $__require("foo"), b = $__require("bar");
+  'use strict';
+
   var global = this || self,
       GLOBAL = global;
+  var module;
 });
