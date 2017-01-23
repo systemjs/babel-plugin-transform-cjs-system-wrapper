@@ -1,4 +1,4 @@
-System.registerDynamic([], true, function ($__require, exports, module) {
+System.registerDynamic([], function ($__require, exports, module) {
   'use strict';
   'foobar';
 
