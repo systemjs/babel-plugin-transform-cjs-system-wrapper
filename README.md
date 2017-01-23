@@ -2,6 +2,8 @@
 
 Wraps CommonJS scripts into `System.registerDynamic(...`
 
+_For SystemJS 0.19 and below support, use the 0.3.0 version._
+
 ## Example
 
 **In**
