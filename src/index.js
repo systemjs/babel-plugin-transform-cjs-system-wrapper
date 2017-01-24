@@ -5,7 +5,7 @@ export default function ({ types: t }) {
   const requireIdentifier = t.identifier('require');
 
   const buildTemplate = template(`
-    SYSTEM_GLOBAL.registerDynamic(MODULE_NAME, [DEPS], BODY);
+    SYSTEM_GLOBAL.registerDynamic(MODULE_NAME, [DEPS], true, BODY);
   `);
 
   const buildFactory = template(`
