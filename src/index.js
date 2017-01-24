@@ -110,6 +110,10 @@ export default function ({ types: t }) {
           this.usesFilePaths = true;
         }
       },
+      ThisExpression(path, state) {
+        if (!path.scope.parent)
+          path.replaceWith(t.identifier('exports'));
+      },
       Program: {
         exit(path, { opts = {} }) {
           const {
