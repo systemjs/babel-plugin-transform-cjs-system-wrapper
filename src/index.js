@@ -23,12 +23,12 @@ export default function ({ types: t }) {
   `);
 
   const buildDynamicFilePaths = template(`
-    var $__pathVars = SYSTEM_GLOBAL.get('@@cjs-helpers').getPathVars(module.id), __filename = $__pathVars.filename, __dirname = $__pathVars.dirname;
+    var $__pathVars = SYSTEM_GLOBAL.registry.get('@@cjs-helpers').getPathVars(module.id), __filename = $__pathVars.filename, __dirname = $__pathVars.dirname;
   `);
 
   const buildRequireResolveFacade = template(`
     require.resolve = function(request) {
-       return SYSTEM_GLOBAL.get('@@cjs-helpers').requireResolve(request, module.id);
+       return SYSTEM_GLOBAL.registry.get('@@cjs-helpers').requireResolve(request, module.id);
     }
   `);
 
