@@ -32,6 +32,10 @@ export default function ({ types: t }) {
     }
   `);
 
+  const buildEsModule = template(`
+    Object.defineProperty(module.exports, '__esModule', { value: true });
+  `);
+
   return {
     pre() {
       this.usesFilePaths = false;
@@ -166,6 +170,9 @@ export default function ({ types: t }) {
             globals = t.variableDeclaration('var', globalAssignments);
             path.node.body.unshift(globals);
           }
+
+          if (opts.esModule)
+            path.node.body.push(buildEsModule());  
 
           const factory = buildFactory({
             BODY: path.node.body
