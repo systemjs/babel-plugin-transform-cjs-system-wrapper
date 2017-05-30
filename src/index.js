@@ -81,8 +81,33 @@ export default function ({ types: t }) {
           }
         }
       },
+      StringLiteral (path) {
+        if (this.opts.esModule && this.functionDepth < 2 && path.node.value === '__esModule')
+          this.hasEsModule = true;
+      },
+      MemberExpression (path) {
+        if (this.opts.esModule && this.functionDepth < 2 && path.node.property.name === '__esModule')
+          this.hasEsModule = true;
+      },
+      ObjectProperty (path) {
+        if (this.opts.esModule && this.functionDepth < 2 && path.node.key.name === '__esModule')
+          this.hasEsModule = true;
+      },
+      Scope: {
+        enter (path) {
+          if (this.opts.esModule && t.isFunction(path.scope.block))
+            this.functionDepth++;
+        },
+        exit (path) {
+          if (this.opts.esModule && t.isFunction(path.scope.block))
+            this.functionDepth--;
+        }
+      },
       MemberExpression(path, { opts = {} }) {
         let { node } = path;
+
+        if (this.opts.esModule && path.node.property.name === '__esModule')
+          this.hasEsModule = true;
 
         // optimize process.env.NODE_ENV to 'production'
         if (opts.optimize &&
@@ -119,6 +144,9 @@ export default function ({ types: t }) {
           path.replaceWith(t.identifier('exports'));
       },
       Program: {
+        enter () {
+          this.functionDepth = 0;
+        },
         exit(path, { opts = {} }) {
           const {
             requireName = 'require',
@@ -171,8 +199,8 @@ export default function ({ types: t }) {
             path.node.body.unshift(globals);
           }
 
-          if (opts.esModule)
-            path.node.body.push(buildEsModule());  
+          if (opts.esModule && !this.hasEsModule)
+            path.node.body.push(buildEsModule());
 
           const factory = buildFactory({
             BODY: path.node.body
